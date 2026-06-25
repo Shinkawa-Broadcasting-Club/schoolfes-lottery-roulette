@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "school-fes-lottery-roulette",
+  "productName": "SBC Lottery Roulette",
   "version": "0.1.0",
-  "identifier": "jp.tast",
+  "identifier": "jp.tast.sbc-lottery-roulette",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,23 +12,21 @@
   "app": {
     "windows": [
       {
-        "title": "school-fes-lottery-roulette",
-        "width": 800,
-        "height": 600
+        "title": "SBC 抽選ルーレット",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 1024,
+        "minHeight": 720
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' ipc: http://ipc.localhost https://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "msi"],
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
       "icons/icon.ico"
     ]
   }
