@@ -26,6 +26,14 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "msi"],
+    "windows": {
+      "nsis": {
+        "languages": ["Japanese"]
+      },
+      "wix": {
+        "language": "ja-JP"
+      }
+    },
     "icon": [
       "icons/icon.ico"
     ]
