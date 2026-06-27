@@ -84,7 +84,12 @@ export function createDialogService() {
     get message() {
       return message;
     },
-    input,
+    get input() {
+      return input;
+    },
+    set input(value: string) {
+      input = value;
+    },
     showAlert,
     showConfirm,
     showPrompt,
