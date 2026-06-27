@@ -1,6 +1,3 @@
-/**
- * Global reset and document defaults.
- */
 *,
 *::before,
 *::after {
@@ -25,9 +22,6 @@ body {
   color: var(--ink);
   font-family: var(--font-display);
   overflow: hidden;
-  transition:
-    background-color var(--transition),
-    color var(--transition);
 }
 
 @media (prefers-reduced-motion: reduce) {

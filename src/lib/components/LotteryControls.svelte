@@ -7,6 +7,7 @@
     minValue?: string;
     maxValue?: string;
     drawDisabled: boolean;
+    projectName: string;
     onDraw: () => void;
     onOpenSettings: () => void;
   };
@@ -17,12 +18,14 @@
     minValue = $bindable('0'),
     maxValue = $bindable('999'),
     drawDisabled,
+    projectName,
     onDraw,
     onOpenSettings
   }: Props = $props();
 </script>
 
 <div class="input-group">
+  <span class="project-label text-dim">{projectName}</span>
   <label class="field-label" for="name">抽選名:</label>
   <select class="field" id="name" bind:value={selectedPrize}>
     <option value="">選択してください</option>
@@ -46,8 +49,13 @@
     gap: var(--space-2) var(--space-4);
     padding: var(--space-3) var(--space-4);
     background: var(--panel-raised);
-    border-bottom: 1px solid var(--line);
     flex-shrink: 0;
+  }
+
+  .project-label {
+    font-family: var(--font-label);
+    font-size: var(--text-sm);
+    margin-right: var(--space-2);
   }
 
   .input-group :global(.btn) {
@@ -55,5 +63,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  #drawButton {
+    border-radius: 2px;
+    padding-inline: var(--space-6);
   }
 </style>

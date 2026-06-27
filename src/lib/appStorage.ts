@@ -1,22 +1,46 @@
-import { invoke, isTauri } from '@tauri-apps/api/core';
-import { RESULTS_STORAGE_KEY, SETTINGS_STORAGE_KEY } from './lottery';
+import { isTauri } from '@tauri-apps/api/core';
+import {
+  deleteProjectDir,
+  readAppStorage,
+  readProjectStorage,
+  writeAppStorage,
+  writeProjectStorage
+} from './tauri/commands';
+import {
+  PROJECTS_INDEX_FILE,
+  RESULTS_STORAGE_KEY,
+  SETTINGS_STORAGE_KEY,
+  STORAGE_KEY_TO_FILENAME,
+  type AppStorageKey
+} from './storage/storageKeys';
 
-export const SETTINGS_STORAGE_FILE = 'settings.json';
-export const RESULTS_STORAGE_FILE = 'results.json';
+export { RESULTS_STORAGE_FILE, SETTINGS_STORAGE_FILE } from './storage/storageKeys';
 
-const STORAGE_FILES = {
-  [SETTINGS_STORAGE_KEY]: SETTINGS_STORAGE_FILE,
-  [RESULTS_STORAGE_KEY]: RESULTS_STORAGE_FILE
-} as const;
+export type { AppStorageKey };
 
-export type AppStorageKey = keyof typeof STORAGE_FILES;
+const PROJECT_LOCALSTORAGE_PREFIX = 'project:';
+const GLOBAL_LOCALSTORAGE_PREFIX = 'global:';
 
-async function readFromAppData(filename: string): Promise<string | null> {
-  return invoke<string | null>('read_app_storage', { filename });
+export class AppStorageError extends Error {
+  readonly cause: unknown;
+
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    this.name = 'AppStorageError';
+    this.cause = cause;
+  }
 }
 
-async function writeToAppData(filename: string, content: string): Promise<void> {
-  await invoke('write_app_storage', { filename, content });
+async function withStorageError<T>(operation: () => Promise<T>, context: string): Promise<T> {
+  try {
+    return await operation();
+  } catch (cause) {
+    throw new AppStorageError(`${context}: ${String(cause)}`, cause);
+  }
+}
+
+function resolveStorageFilename(key: AppStorageKey): string {
+  return STORAGE_KEY_TO_FILENAME[key];
 }
 
 function readFromLocalStorage(key: string): string | null {
@@ -29,35 +53,83 @@ function writeToLocalStorage(key: string, content: string): void {
   localStorage.setItem(key, content);
 }
 
-function migrateLegacyLocalStorage(key: AppStorageKey): string | null {
-  const legacy = readFromLocalStorage(key);
-  if (legacy === null) return null;
-
+function removeFromLocalStorage(key: string): void {
+  if (typeof localStorage === 'undefined') return;
   localStorage.removeItem(key);
-  return legacy;
 }
 
-export async function loadStorageItem(key: AppStorageKey): Promise<string | null> {
-  if (isTauri()) {
-    const filename = STORAGE_FILES[key];
-    const stored = await readFromAppData(filename);
-    if (stored !== null) return stored;
+function getProjectLocalStorageKey(projectId: string, key: AppStorageKey): string {
+  return `${PROJECT_LOCALSTORAGE_PREFIX}${projectId}:${key}`;
+}
 
-    const legacy = migrateLegacyLocalStorage(key);
-    if (legacy !== null) {
-      await writeToAppData(filename, legacy);
+function getGlobalLocalStorageKey(filename: string): string {
+  return `${GLOBAL_LOCALSTORAGE_PREFIX}${filename}`;
+}
+
+async function readProjectFile(projectId: string, key: AppStorageKey): Promise<string | null> {
+  return readProjectStorage(projectId, resolveStorageFilename(key));
+}
+
+async function writeProjectFile(
+  projectId: string,
+  key: AppStorageKey,
+  content: string
+): Promise<void> {
+  await writeProjectStorage(projectId, resolveStorageFilename(key), content);
+}
+
+export async function loadProjectStorageItem(
+  projectId: string,
+  key: AppStorageKey
+): Promise<string | null> {
+  return withStorageError(async () => {
+    if (isTauri()) {
+      return readProjectFile(projectId, key);
     }
-    return legacy;
-  }
-
-  return readFromLocalStorage(key);
+    return readFromLocalStorage(getProjectLocalStorageKey(projectId, key));
+  }, `loadProjectStorageItem(${projectId}, ${key})`);
 }
 
-export async function saveStorageItem(key: AppStorageKey, content: string): Promise<void> {
-  if (isTauri()) {
-    await writeToAppData(STORAGE_FILES[key], content);
-    return;
-  }
+export async function saveProjectStorageItem(
+  projectId: string,
+  key: AppStorageKey,
+  content: string
+): Promise<void> {
+  await withStorageError(async () => {
+    if (isTauri()) {
+      await writeProjectFile(projectId, key, content);
+      return;
+    }
+    writeToLocalStorage(getProjectLocalStorageKey(projectId, key), content);
+  }, `saveProjectStorageItem(${projectId}, ${key})`);
+}
 
-  writeToLocalStorage(key, content);
+export async function deleteProjectStorage(projectId: string): Promise<void> {
+  await withStorageError(async () => {
+    if (isTauri()) {
+      await deleteProjectDir(projectId);
+      return;
+    }
+    removeFromLocalStorage(getProjectLocalStorageKey(projectId, SETTINGS_STORAGE_KEY));
+    removeFromLocalStorage(getProjectLocalStorageKey(projectId, RESULTS_STORAGE_KEY));
+  }, `deleteProjectStorage(${projectId})`);
+}
+
+export async function loadGlobalFile(filename: string): Promise<string | null> {
+  return withStorageError(async () => {
+    if (isTauri()) {
+      return readAppStorage(filename);
+    }
+    return readFromLocalStorage(getGlobalLocalStorageKey(filename));
+  }, `loadGlobalFile(${filename})`);
+}
+
+export async function saveGlobalFile(filename: string, content: string): Promise<void> {
+  await withStorageError(async () => {
+    if (isTauri()) {
+      await writeAppStorage(filename, content);
+      return;
+    }
+    writeToLocalStorage(getGlobalLocalStorageKey(filename), content);
+  }, `saveGlobalFile(${filename})`);
 }

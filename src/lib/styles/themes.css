@@ -1,10 +1,6 @@
-/**
- * Color themes — applied via data-theme on <html>.
- * Default: Orange (warm nixie-style palette).
- */
-
 :root,
 [data-theme='orange'] {
+  color-scheme: dark;
   --amber: #ff9e2c;
   --amber-deep: #b85c12;
   --ink-on-amber: #1a0e00;
@@ -22,12 +18,13 @@
   --ok: #4f9d5d;
   --danger: #c0463f;
 
-  --glow: 0 0 6px rgba(255, 158, 44, 0.55), 0 0 22px rgba(255, 158, 44, 0.3);
-  --glow-text: 0 0 5px rgba(255, 158, 44, 0.35);
+  --glow: 0 0 3px rgba(255, 128, 18, 0.95), 0 0 11px rgba(185, 65, 5, 0.28);
+  --glow-text: 0 0 3px rgba(255, 128, 18, 0.65);
   --overlay: rgba(8, 6, 4, 0.72);
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   --amber: #6eb5ff;
   --amber-deep: #4a8fd9;
   --ink-on-amber: #081018;
@@ -45,12 +42,13 @@
   --ok: #5cb86a;
   --danger: #e05a52;
 
-  --glow: 0 0 6px rgba(110, 181, 255, 0.5), 0 0 22px rgba(110, 181, 255, 0.28);
-  --glow-text: 0 0 5px rgba(110, 181, 255, 0.35);
+  --glow: 0 0 3px rgba(110, 190, 255, 0.9), 0 0 11px rgba(55, 125, 210, 0.26);
+  --glow-text: 0 0 3px rgba(110, 190, 255, 0.6);
   --overlay: rgba(0, 0, 0, 0.75);
 }
 
 [data-theme='light'] {
+  color-scheme: light;
   --amber: #d4710a;
   --amber-deep: #a85608;
   --ink-on-amber: #fffef9;
@@ -68,7 +66,7 @@
   --ok: #3d8a4a;
   --danger: #b83832;
 
-  --glow: 0 0 6px rgba(212, 113, 10, 0.35), 0 0 18px rgba(212, 113, 10, 0.2);
-  --glow-text: 0 0 4px rgba(212, 113, 10, 0.3);
+  --glow: 0 0 3px rgba(210, 95, 5, 0.75), 0 0 9px rgba(165, 55, 0, 0.2);
+  --glow-text: 0 0 3px rgba(210, 95, 5, 0.5);
   --overlay: rgba(20, 16, 12, 0.45);
 }

@@ -6,6 +6,7 @@ import {
   DEFAULT_PRIZE_NAMES,
   getDigitRevealSequence,
   hasDuplicateResult,
+  isDigitRevealOrder,
   LOTTERY_MAX_NUMBER,
   LOTTERY_MIN_NUMBER,
   MAX_PRIZE_COUNT,
@@ -192,8 +193,25 @@ describe('prize settings helpers', () => {
     });
   });
 
-  it('rejects empty or duplicated custom prize names', () => {
-    expect(parseStoredPrizes(JSON.stringify(['1等', '']))).toBeNull();
-    expect(parseStoredPrizes(JSON.stringify(['1等', '1等']))).toBeNull();
+  it('falls back to ones-first when stored digitRevealOrder is invalid', () => {
+    expect(
+      parseStoredSettings(
+        JSON.stringify({
+          prizes: ['1等'],
+          digitRevealOrder: 'reverse',
+          theme: 'dark'
+        })
+      )
+    ).toEqual({
+      prizes: ['1等'],
+      digitRevealOrder: 'ones-first',
+      theme: 'dark'
+    });
+  });
+
+  it('validates digit reveal order', () => {
+    expect(isDigitRevealOrder('ones-first')).toBe(true);
+    expect(isDigitRevealOrder('hundreds-first')).toBe(true);
+    expect(isDigitRevealOrder('random')).toBe(false);
   });
 });

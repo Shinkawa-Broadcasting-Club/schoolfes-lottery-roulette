@@ -4,8 +4,19 @@ export const LOTTERY_MIN_NUMBER = 0;
 export const LOTTERY_MAX_NUMBER = 999;
 export const MAX_PRIZE_COUNT = 7;
 export const DEFAULT_PRIZE_NAMES = ['1等', '2等', '3等', '4等', '5等', '6等', '7等'] as const;
-export const RESULTS_STORAGE_KEY = 'sbc-lottery-roulette-results-v1';
-export const SETTINGS_STORAGE_KEY = 'sbc-lottery-roulette-settings-v1';
+
+export {
+  RESULTS_STORAGE_KEY,
+  SETTINGS_STORAGE_KEY
+} from './storage/storageKeys';
+
+export {
+  parseStoredPrizes,
+  parseStoredSettings,
+  serializeSettings
+} from './storage/settingsStorage';
+
+export { parseStoredResults, serializeResults } from './storage/resultsStorage';
 
 export const DIGIT_REVEAL_ORDERS = ['ones-first', 'hundreds-first'] as const;
 export type DigitRevealOrder = (typeof DIGIT_REVEAL_ORDERS)[number];
@@ -27,6 +38,10 @@ export type ResultLocation = {
 const UINT32_RANGE = 0x1_0000_0000;
 
 type CryptoLike = Pick<Crypto, 'getRandomValues'>;
+
+export function isDigitRevealOrder(value: unknown): value is DigitRevealOrder {
+  return typeof value === 'string' && (DIGIT_REVEAL_ORDERS as readonly string[]).includes(value);
+}
 
 export function createDefaultPrizes(): PrizeName[] {
   return [...DEFAULT_PRIZE_NAMES];
@@ -56,56 +71,6 @@ export function createEmptyResults(prizes: readonly PrizeName[] = DEFAULT_PRIZE_
     },
     {} as LotteryResults
   );
-}
-
-export function parseStoredPrizes(raw: string | null): PrizeName[] | null {
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return null;
-
-    if (!parsed.every((value) => typeof value === 'string')) return null;
-
-    const normalized = parsed.map(normalizePrizeName).slice(0, MAX_PRIZE_COUNT);
-
-    if (normalized.length === 0) return null;
-    if (normalized.some((name) => !name)) return null;
-    if (new Set(normalized).size !== normalized.length) return null;
-    return normalized;
-  } catch {
-    return null;
-  }
-}
-
-export function parseStoredSettings(raw: string | null): LotterySettings | null {
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (Array.isArray(parsed)) {
-      const prizes = parseStoredPrizes(raw);
-      if (!prizes) return null;
-      return { prizes, digitRevealOrder: 'ones-first', theme: DEFAULT_APP_THEME };
-    }
-
-    if (typeof parsed !== 'object' || parsed === null) return null;
-
-    const record = parsed as Record<string, unknown>;
-    const prizes = parseStoredPrizes(JSON.stringify(record.prizes));
-    if (!prizes) return null;
-
-    const order = record.digitRevealOrder;
-    const digitRevealOrder: DigitRevealOrder =
-      order === 'hundreds-first' ? 'hundreds-first' : 'ones-first';
-
-    const theme = isAppTheme(record.theme) ? record.theme : DEFAULT_APP_THEME;
-
-    return { prizes, digitRevealOrder, theme };
-  } catch {
-    return null;
-  }
 }
 
 export function isNumberInRange(
@@ -194,37 +159,6 @@ export function getUsedNumbers(
   return new Set(prizes.flatMap((prize) => results[prize] ?? []));
 }
 
-export function parseStoredResults(
-  raw: string | null,
-  prizes: readonly PrizeName[] = DEFAULT_PRIZE_NAMES
-): LotteryResults | null {
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const restored = createEmptyResults(prizes);
-    const usedNumbers = new Set<number>();
-
-    for (const prize of prizes) {
-      const list = parsed[prize];
-      if (!Array.isArray(list)) continue;
-
-      for (const value of list) {
-        if (typeof value !== 'number') continue;
-        if (!isNumberInRange(value, LOTTERY_MIN_NUMBER, LOTTERY_MAX_NUMBER)) continue;
-        if (usedNumbers.has(value)) continue;
-
-        restored[prize].push(value);
-        usedNumbers.add(value);
-      }
-    }
-
-    return restored;
-  } catch {
-    return null;
-  }
-}
-
 export function reconcileResultsForPrizes(
   previousPrizes: readonly PrizeName[],
   nextPrizes: readonly PrizeName[],
@@ -262,3 +196,5 @@ export function reconcileResultsForPrizes(
 
   return reconciled;
 }
+
+export { isAppTheme };

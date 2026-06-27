@@ -5,18 +5,13 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SBC 抽選ルーレット</title>
+    <!-- Keep in sync with THEME_BOOTSTRAP_SCRIPT / THEME_LOCALSTORAGE_KEY in src/lib/theme.ts -->
     <script>
       (function () {
         var theme = 'orange';
         try {
-          var raw = localStorage.getItem('sbc-lottery-roulette-settings-v1');
-          if (raw) {
-            var parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-              var t = parsed.theme;
-              if (t === 'dark' || t === 'light' || t === 'orange') theme = t;
-            }
-          }
+          var t = localStorage.getItem('sbc-lottery-roulette-last-theme');
+          if (t === 'dark' || t === 'light' || t === 'orange') theme = t;
         } catch (e) {}
         document.documentElement.dataset.theme = theme;
       })();

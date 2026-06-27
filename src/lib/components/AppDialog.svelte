@@ -43,12 +43,7 @@
     inputElement.select();
   };
 
-  $effect(() => {
-    document.body.style.overflow = visible ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  });
+
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -72,7 +67,7 @@
       {#if kind === 'prompt'}
         <input
           type="text"
-          class="field field--tube field--full"
+          class="field field--full"
           bind:value={input}
           onfocus={selectPromptInput}
           {@attach focusPromptInput}
@@ -104,9 +99,9 @@
     z-index: 1;
     width: min(calc(100% - var(--space-4) * 2), 420px);
     padding: var(--space-4);
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-lg);
     background: var(--panel-raised);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
   }
 
   .dialog :global(.field) {

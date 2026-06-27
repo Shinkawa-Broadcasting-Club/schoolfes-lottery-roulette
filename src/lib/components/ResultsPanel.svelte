@@ -14,24 +14,24 @@
 
 <div class="results-container" id="results-container">
   {#each prizes as prize (prize)}
-    <section class="results-section surface" data-name={prize}>
+    <section class="results-section" data-name={prize}>
       <div class="section-title">
         <span>{prize}</span>
         <button type="button" class="btn btn--success" onclick={() => onAddManually(prize)}>+ 番号追加</button>
       </div>
       <div class="result-numbers">
-        {#each results[prize] as number, index (`${prize}-${number}`)}
+        {#each results[prize] as number, index (`${prize}-${index}`)}
           <div class="result-item tube-cell" data-number={number}>
             <span class="number-text">{number}</span>
             <button
               type="button"
-              class="btn btn--icon btn--ok result-edit"
+              class="result-action-btn result-edit"
               title="編集"
               onclick={() => onEditNumber(prize, index)}>✎</button
             >
             <button
               type="button"
-              class="btn btn--icon btn--danger result-delete"
+              class="result-action-btn result-delete"
               title="削除"
               onclick={() => onDeleteNumber(prize, index)}>×</button
             >
@@ -47,9 +47,7 @@
     height: 100%;
     overflow: hidden;
     padding: var(--space-2);
-    gap: var(--space-1);
-    border-left: 1px solid var(--line);
-    background: var(--panel-raised);
+    gap: var(--space-2);
     flex: 0 1 var(--results-panel-width);
     width: var(--results-panel-width);
     max-width: var(--results-panel-max);
@@ -69,13 +67,12 @@
   }
 
   .section-title {
-    font-size: clamp(14px, 1.1vw, 19px);
+    font-size: clamp(16px, 1.5vw, 24px);
     font-weight: 700;
     letter-spacing: 0.05em;
     color: var(--amber);
     width: 100%;
     padding: 0 0 var(--space-1);
-    border-bottom: 1px solid var(--line);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -90,60 +87,79 @@
     width: 100%;
     min-height: 0;
     flex: 1;
-    overflow: hidden;
+    overflow-y: auto;
   }
 
   .result-item {
     font-size: clamp(20px, 1.75vw, 36px);
     font-variant-numeric: tabular-nums;
     position: relative;
-    padding: 0 var(--space-2);
+    padding: 0 44px 0 var(--space-2);
     background-color: var(--panel-raised);
     display: inline-flex;
     align-items: center;
-    min-width: 72px;
-    justify-content: center;
-    transition: border-color var(--transition);
+    min-width: 96px;
   }
 
   .result-item:hover {
-    border-color: var(--amber);
+    background-color: var(--line);
   }
 
   .number-text {
     display: inline-block;
+    min-width: 3ch;
+    text-align: right;
   }
 
-  .result-edit,
-  .result-delete {
+  .result-action-btn {
     position: absolute;
-    top: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius);
+    background-color: var(--panel);
+    font-size: 12px;
+    line-height: 1;
+    color: var(--ink-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.2;
     z-index: 10;
-    opacity: 0;
   }
 
-  .result-item:hover .result-edit,
-  .result-item:hover .result-delete,
-  .result-edit:focus-visible,
-  .result-delete:focus-visible {
+  .result-item:hover .result-action-btn,
+  .result-action-btn:focus-visible {
     opacity: 1;
   }
 
+  .result-action-btn.result-edit:hover {
+    color: var(--ok);
+    background-color: var(--panel-sunken);
+  }
+
+  .result-action-btn.result-delete:hover {
+    color: var(--danger);
+    background-color: var(--panel-sunken);
+  }
+
   .result-edit {
-    right: 24px;
+    right: 22px;
   }
 
   .result-delete {
-    right: -7px;
+    right: 1px;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: var(--breakpoint-md)) {
     .results-container {
       flex: 1 1 auto;
       width: 100%;
       min-width: 0;
-      border-left: none;
-      border-top: 1px solid var(--line);
     }
 
     .results-section {
