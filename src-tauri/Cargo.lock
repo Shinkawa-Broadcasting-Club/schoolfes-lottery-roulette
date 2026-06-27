@@ -2805,7 +2805,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "school-fes-lottery-roulette"
+name = "schoolfes-lottery-roulette"
 version = "0.1.0"
 dependencies = [
  "tauri",
