@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import AppDialog, { type DialogKind } from '$lib/components/AppDialog.svelte';
   import LotteryControls from '$lib/components/LotteryControls.svelte';
@@ -8,21 +8,25 @@
   import ResultsPanel from '$lib/components/ResultsPanel.svelte';
   import {
     createEmptyResults,
-    createDefaultPrizes,
+    createDefaultSettings,
+    getDigitRevealSequence,
     getUsedNumbers,
     hasDuplicateResult,
     LOTTERY_MAX_NUMBER,
     LOTTERY_MIN_NUMBER,
     parseStoredResults,
-    parseStoredPrizes,
+    parseStoredSettings,
     parseThreeDigitNumber,
     pickAvailableNumber,
     reconcileResultsForPrizes,
     RESULTS_STORAGE_KEY,
     SETTINGS_STORAGE_KEY,
+    type DigitRevealOrder,
     type LotteryResults,
     type PrizeName
   } from '$lib/lottery';
+  import { loadStorageItem, saveStorageItem } from '$lib/appStorage';
+  import { applyTheme, type AppTheme } from '$lib/theme';
 
   const CONFIG = {
     NUMBER: {
@@ -46,26 +50,18 @@
     }
   } as const;
 
-  function loadStoredPrizes(): PrizeName[] | null {
-    if (typeof localStorage === 'undefined') return null;
-    return parseStoredPrizes(localStorage.getItem(SETTINGS_STORAGE_KEY));
-  }
+  const defaultSettings = createDefaultSettings();
 
-  function loadStoredResults(currentPrizes: readonly PrizeName[]): LotteryResults | null {
-    if (typeof localStorage === 'undefined') return null;
-    return parseStoredResults(localStorage.getItem(RESULTS_STORAGE_KEY), currentPrizes);
-  }
-
-  const initialPrizes = loadStoredPrizes() ?? createDefaultPrizes();
-  const initialResults = loadStoredResults(initialPrizes) ?? createEmptyResults(initialPrizes);
-
-  let prizes = $state<PrizeName[]>(initialPrizes);
+  let storageReady = $state(false);
+  let prizes = $state<PrizeName[]>(defaultSettings.prizes);
+  let digitRevealOrder = $state<DigitRevealOrder>(defaultSettings.digitRevealOrder);
+  let theme = $state<AppTheme>(defaultSettings.theme);
   let selectedPrize = $state<PrizeName | ''>('');
   let minValue = $state('0');
   let maxValue = $state('999');
   let drawDisabled = $state(false);
   let nixieDigits = $state<string[]>(['', '', '']);
-  let results = $state<LotteryResults>(initialResults);
+  let results = $state<LotteryResults>(createEmptyResults(defaultSettings.prizes));
   let settingsVisible = $state(false);
 
   let drumroll = $state<HTMLAudioElement | null>(null);
@@ -90,7 +86,7 @@
     };
   };
 
-  function validateNumber(value: string): number | null {
+  function validateNumber(value: string | number): number | null {
     return parseThreeDigitNumber(value, CONFIG.NUMBER.MIN, CONFIG.NUMBER.MAX);
   }
 
@@ -162,10 +158,28 @@
     }
   }
 
+  onMount(async () => {
+    const settingsRaw = await loadStorageItem(SETTINGS_STORAGE_KEY);
+    const settings = parseStoredSettings(settingsRaw) ?? createDefaultSettings();
+    prizes = [...settings.prizes];
+    digitRevealOrder = settings.digitRevealOrder;
+    theme = settings.theme;
+    applyTheme(settings.theme);
+
+    const resultsRaw = await loadStorageItem(RESULTS_STORAGE_KEY);
+    results =
+      parseStoredResults(resultsRaw, settings.prizes) ?? createEmptyResults(settings.prizes);
+    storageReady = true;
+  });
+
   $effect(() => {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(prizes));
-    localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(results));
+    applyTheme(theme);
+    if (!storageReady) return;
+    void saveStorageItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ prizes, digitRevealOrder, theme })
+    );
+    void saveStorageItem(RESULTS_STORAGE_KEY, JSON.stringify(results));
   });
 
   function clearNixieTimers() {
@@ -192,12 +206,14 @@
   }
 
   function stopRandomization(finalDigits: string[]) {
-    CONFIG.ANIMATION.REVEAL_TIMES.forEach((time, index) => {
+    const sequence = getDigitRevealSequence(digitRevealOrder);
+    sequence.forEach((digitIndex, step) => {
+      const time = CONFIG.ANIMATION.REVEAL_TIMES[step];
       const timeout = setTimeout(() => {
-        const interval = nixieIntervals[index];
+        const interval = nixieIntervals[digitIndex];
         if (!interval) return;
         clearInterval(interval);
-        nixieDigits[index] = finalDigits[2 - index];
+        nixieDigits[digitIndex] = finalDigits[2 - digitIndex];
         nixieDigits = [...nixieDigits];
       }, time);
       revealTimeouts.push(timeout);
@@ -322,14 +338,21 @@
     settingsVisible = false;
   }
 
-  function applySettings(nextPrizes: PrizeName[]) {
+  function handlePrizesChange(nextPrizes: PrizeName[]) {
     const previousPrizes = [...prizes];
     prizes = nextPrizes;
     results = reconcileResultsForPrizes(previousPrizes, nextPrizes, results);
     if (selectedPrize && !nextPrizes.includes(selectedPrize)) {
       selectedPrize = '';
     }
-    settingsVisible = false;
+  }
+
+  function handleDigitRevealOrderChange(order: DigitRevealOrder) {
+    digitRevealOrder = order;
+  }
+
+  function handleThemeChange(nextTheme: AppTheme) {
+    theme = nextTheme;
   }
 
   onDestroy(() => {
@@ -370,7 +393,11 @@
 <LotterySettings
   visible={settingsVisible}
   {prizes}
-  onApply={applySettings}
+  {digitRevealOrder}
+  {theme}
+  onPrizesChange={handlePrizesChange}
+  onDigitRevealOrderChange={handleDigitRevealOrderChange}
+  onThemeChange={handleThemeChange}
   onClose={closeSettings}
 />
 
@@ -384,123 +411,6 @@
 />
 
 <style>
-  :global(:root) {
-    --amber: #ff9e2c;
-    --amber-deep: #b85c12;
-
-    --panel: #14110c;
-    --panel-raised: #1b1710;
-    --panel-sunken: #100d09;
-
-    --ink: #e9ddc6;
-    --ink-dim: #8c8068;
-
-    --line: #2c261c;
-    --line-strong: #463a28;
-
-    --ok: #4f9d5d;
-    --danger: #c0463f;
-
-    --glow: 0 0 6px rgba(255, 158, 44, 0.55), 0 0 22px rgba(255, 158, 44, 0.3);
-
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 24px;
-    --space-6: 32px;
-
-    --radius: 4px;
-    --radius-lg: 6px;
-
-    --app-min-width: 1024px;
-    --app-min-height: 720px;
-
-    --transition: 0.18s ease;
-    --font-display: 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', 'Segoe UI', sans-serif;
-    --font-label: 'Consolas', 'SFMono-Regular', 'Courier New', monospace;
-    --font-tube: 'Consolas', 'Courier New', monospace;
-  }
-
-  :global(*),
-  :global(*::before),
-  :global(*::after) {
-    box-sizing: border-box;
-  }
-
-  :global(html),
-  :global(body) {
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-
-  :global(body) {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    min-width: var(--app-min-width);
-    min-height: var(--app-min-height);
-    background-color: var(--panel);
-    color: var(--ink);
-    font-family: var(--font-display);
-    overflow: hidden;
-  }
-
-  :global(.btn) {
-    font-size: 14px;
-    font-family: var(--font-label);
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: var(--space-2) var(--space-5);
-    border-radius: var(--radius);
-    border: 1px solid var(--amber);
-    background-color: var(--amber);
-    color: #1a0e00;
-    cursor: pointer;
-    transition:
-      background-color var(--transition),
-      color var(--transition);
-  }
-
-  :global(.btn:hover) {
-    background-color: transparent;
-    color: var(--amber);
-  }
-
-  :global(.btn:active) {
-    background-color: var(--amber-deep);
-    border-color: var(--amber-deep);
-    color: #1a0e00;
-  }
-
-  :global(.btn:disabled) {
-    background-color: transparent;
-    border-color: var(--line-strong);
-    color: var(--ink-dim);
-    cursor: not-allowed;
-  }
-
-  :global(.btn--ghost) {
-    background-color: transparent;
-    border-color: var(--line-strong);
-    color: var(--ink-dim);
-  }
-
-  :global(.btn--ghost:hover) {
-    border-color: var(--amber-deep);
-    color: var(--ink);
-    background-color: transparent;
-  }
-
-  :global(.btn--ghost:active) {
-    border-color: var(--line-strong);
-    color: var(--ink-dim);
-    background-color: var(--panel-sunken);
-  }
-
   .app-shell {
     display: flex;
     flex-direction: column;
@@ -533,7 +443,7 @@
   .copyright {
     margin: 0;
     font-family: var(--font-label);
-    font-size: 11px;
+    font-size: var(--text-xs);
     color: var(--ink-dim);
     white-space: nowrap;
   }
@@ -549,14 +459,6 @@
   @media (max-width: 900px) {
     .wrapper {
       flex-direction: column;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    :global(*),
-    :global(*::before),
-    :global(*::after) {
-      transition: none !important;
     }
   }
 </style>

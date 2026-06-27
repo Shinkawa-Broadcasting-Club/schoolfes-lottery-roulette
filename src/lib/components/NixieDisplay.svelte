@@ -7,9 +7,9 @@
 </script>
 
 <div class="nixie-display">
-  <span id="nixie3" class="nixie-digit">{digits[2]}</span>
-  <span id="nixie2" class="nixie-digit">{digits[1]}</span>
-  <span id="nixie1" class="nixie-digit">{digits[0]}</span>
+  <span id="nixie3" class="nixie-digit tube-cell tube-cell--hero">{digits[2]}</span>
+  <span id="nixie2" class="nixie-digit tube-cell tube-cell--hero">{digits[1]}</span>
+  <span id="nixie1" class="nixie-digit tube-cell tube-cell--hero">{digits[0]}</span>
 </div>
 
 <style>
@@ -28,17 +28,10 @@
   .nixie-digit {
     font-size: min(22vw, 48vh);
     line-height: 1;
-    font-family: var(--font-tube);
-    font-weight: 700;
-    color: var(--amber);
-    text-shadow: var(--glow);
     flex: 1 1 0;
     min-width: 0;
     height: 100%;
     text-align: center;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-lg);
-    background: var(--panel-sunken);
     display: flex;
     justify-content: center;
     align-items: center;

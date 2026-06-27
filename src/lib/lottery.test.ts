@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   createEmptyResults,
   createDefaultPrizes,
+  createDefaultSettings,
   DEFAULT_PRIZE_NAMES,
+  getDigitRevealSequence,
   hasDuplicateResult,
   LOTTERY_MAX_NUMBER,
   LOTTERY_MIN_NUMBER,
@@ -10,6 +12,7 @@ import {
   parseThreeDigitNumber,
   parseStoredPrizes,
   parseStoredResults,
+  parseStoredSettings,
   pickAvailableNumber,
   randomInt,
   reconcileResultsForPrizes
@@ -20,6 +23,7 @@ describe('parseThreeDigitNumber', () => {
     expect(parseThreeDigitNumber('0')).toBe(0);
     expect(parseThreeDigitNumber('999')).toBe(999);
     expect(parseThreeDigitNumber('007')).toBe(7);
+    expect(parseThreeDigitNumber(55)).toBe(55);
   });
 
   it('rejects invalid values', () => {
@@ -104,6 +108,21 @@ describe('lottery result helpers', () => {
       参加賞: [202]
     });
   });
+
+  it('preserves results by prize name when order changes', () => {
+    const previousPrizes = ['1等', '2等', '3等'];
+    const nextPrizes = ['3等', '1等', '2等'];
+    const results = createEmptyResults(previousPrizes);
+    results['1等'] = [101];
+    results['2等'] = [202];
+    results['3等'] = [303];
+
+    expect(reconcileResultsForPrizes(previousPrizes, nextPrizes, results)).toEqual({
+      '3等': [303],
+      '1等': [101],
+      '2等': [202]
+    });
+  });
 });
 
 describe('prize settings helpers', () => {
@@ -112,12 +131,65 @@ describe('prize settings helpers', () => {
     expect(createDefaultPrizes()).toHaveLength(MAX_PRIZE_COUNT);
   });
 
+  it('creates default settings with ones-first reveal order and orange theme', () => {
+    expect(createDefaultSettings()).toEqual({
+      prizes: [...DEFAULT_PRIZE_NAMES],
+      digitRevealOrder: 'ones-first',
+      theme: 'orange'
+    });
+  });
+
+  it('returns reveal sequence for each digit order', () => {
+    expect(getDigitRevealSequence('ones-first')).toEqual([0, 1, 2]);
+    expect(getDigitRevealSequence('hundreds-first')).toEqual([2, 1, 0]);
+  });
+
   it('restores valid custom prize names', () => {
     expect(parseStoredPrizes(JSON.stringify(['特賞', 'A賞', 'B賞']))).toEqual([
       '特賞',
       'A賞',
       'B賞'
     ]);
+  });
+
+  it('restores legacy prize-only settings', () => {
+    expect(parseStoredSettings(JSON.stringify(['1等', '2等']))).toEqual({
+      prizes: ['1等', '2等'],
+      digitRevealOrder: 'ones-first',
+      theme: 'orange'
+    });
+  });
+
+  it('restores full settings object', () => {
+    expect(
+      parseStoredSettings(
+        JSON.stringify({
+          prizes: ['特賞', 'A賞'],
+          digitRevealOrder: 'hundreds-first',
+          theme: 'dark'
+        })
+      )
+    ).toEqual({
+      prizes: ['特賞', 'A賞'],
+      digitRevealOrder: 'hundreds-first',
+      theme: 'dark'
+    });
+  });
+
+  it('falls back to orange theme when stored theme is invalid', () => {
+    expect(
+      parseStoredSettings(
+        JSON.stringify({
+          prizes: ['1等'],
+          digitRevealOrder: 'ones-first',
+          theme: 'neon'
+        })
+      )
+    ).toEqual({
+      prizes: ['1等'],
+      digitRevealOrder: 'ones-first',
+      theme: 'orange'
+    });
   });
 
   it('rejects empty or duplicated custom prize names', () => {

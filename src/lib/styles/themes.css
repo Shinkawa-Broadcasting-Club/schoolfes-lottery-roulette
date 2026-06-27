@@ -1,0 +1,74 @@
+/**
+ * Color themes — applied via data-theme on <html>.
+ * Default: Orange (warm nixie-style palette).
+ */
+
+:root,
+[data-theme='orange'] {
+  --amber: #ff9e2c;
+  --amber-deep: #b85c12;
+  --ink-on-amber: #1a0e00;
+
+  --panel: #14110c;
+  --panel-raised: #1b1710;
+  --panel-sunken: #100d09;
+
+  --ink: #e9ddc6;
+  --ink-dim: #8c8068;
+
+  --line: #2c261c;
+  --line-strong: #463a28;
+
+  --ok: #4f9d5d;
+  --danger: #c0463f;
+
+  --glow: 0 0 6px rgba(255, 158, 44, 0.55), 0 0 22px rgba(255, 158, 44, 0.3);
+  --glow-text: 0 0 5px rgba(255, 158, 44, 0.35);
+  --overlay: rgba(8, 6, 4, 0.72);
+}
+
+[data-theme='dark'] {
+  --amber: #6eb5ff;
+  --amber-deep: #4a8fd9;
+  --ink-on-amber: #081018;
+
+  --panel: #0e0e12;
+  --panel-raised: #18181f;
+  --panel-sunken: #08080b;
+
+  --ink: #ececf0;
+  --ink-dim: #8a8a98;
+
+  --line: #2a2a34;
+  --line-strong: #3e3e4c;
+
+  --ok: #5cb86a;
+  --danger: #e05a52;
+
+  --glow: 0 0 6px rgba(110, 181, 255, 0.5), 0 0 22px rgba(110, 181, 255, 0.28);
+  --glow-text: 0 0 5px rgba(110, 181, 255, 0.35);
+  --overlay: rgba(0, 0, 0, 0.75);
+}
+
+[data-theme='light'] {
+  --amber: #d4710a;
+  --amber-deep: #a85608;
+  --ink-on-amber: #fffef9;
+
+  --panel: #eee8df;
+  --panel-raised: #faf7f2;
+  --panel-sunken: #e0d8cc;
+
+  --ink: #1a140e;
+  --ink-dim: #6a5e50;
+
+  --line: #d4ccc0;
+  --line-strong: #b8aea0;
+
+  --ok: #3d8a4a;
+  --danger: #b83832;
+
+  --glow: 0 0 6px rgba(212, 113, 10, 0.35), 0 0 18px rgba(212, 113, 10, 0.2);
+  --glow-text: 0 0 4px rgba(212, 113, 10, 0.3);
+  --overlay: rgba(20, 16, 12, 0.45);
+}

@@ -57,7 +57,7 @@
   <div class="dialog-overlay">
     <button
       type="button"
-      class="dialog-backdrop"
+      class="overlay-backdrop"
       aria-label="ダイアログを閉じる"
       onclick={onCancel}
     ></button>
@@ -72,7 +72,7 @@
       {#if kind === 'prompt'}
         <input
           type="text"
-          class="dialog-input"
+          class="field field--tube field--full"
           bind:value={input}
           onfocus={selectPromptInput}
           {@attach focusPromptInput}
@@ -99,15 +99,6 @@
     padding: 0;
   }
 
-  .dialog-backdrop {
-    position: absolute;
-    inset: 0;
-    border: none;
-    padding: 0;
-    background: rgba(8, 6, 4, 0.72);
-    cursor: default;
-  }
-
   .dialog {
     position: relative;
     z-index: 1;
@@ -118,6 +109,10 @@
     background: var(--panel-raised);
   }
 
+  .dialog :global(.field) {
+    margin: 0 0 var(--space-3);
+  }
+
   .dialog-message {
     margin: 0;
     padding: 0 0 var(--space-3);
@@ -125,30 +120,6 @@
     line-height: 1.6;
     color: var(--ink);
     white-space: pre-wrap;
-  }
-
-  .dialog-input {
-    width: 100%;
-    margin: 0 0 var(--space-3);
-    font-size: 15px;
-    font-family: var(--font-tube);
-    font-variant-numeric: tabular-nums;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius);
-    border: 1px solid var(--line-strong);
-    background-color: var(--panel-sunken);
-    color: var(--amber);
-    text-shadow: 0 0 5px rgba(255, 158, 44, 0.35);
-    transition: border-color var(--transition);
-  }
-
-  .dialog-input:hover {
-    border-color: var(--amber-deep);
-  }
-
-  .dialog-input:focus {
-    outline: none;
-    border-color: var(--amber);
   }
 
   .dialog-actions {

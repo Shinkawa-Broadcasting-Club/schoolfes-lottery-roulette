@@ -1,0 +1,39 @@
+/**
+ * Global reset and document defaults.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: var(--app-min-width);
+  min-height: var(--app-min-height);
+  background-color: var(--panel);
+  color: var(--ink);
+  font-family: var(--font-display);
+  overflow: hidden;
+  transition:
+    background-color var(--transition),
+    color var(--transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+}

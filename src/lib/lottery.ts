@@ -1,9 +1,20 @@
+import { DEFAULT_APP_THEME, isAppTheme, type AppTheme } from './theme';
+
 export const LOTTERY_MIN_NUMBER = 0;
 export const LOTTERY_MAX_NUMBER = 999;
 export const MAX_PRIZE_COUNT = 7;
 export const DEFAULT_PRIZE_NAMES = ['1等', '2等', '3等', '4等', '5等', '6等', '7等'] as const;
 export const RESULTS_STORAGE_KEY = 'sbc-lottery-roulette-results-v1';
 export const SETTINGS_STORAGE_KEY = 'sbc-lottery-roulette-settings-v1';
+
+export const DIGIT_REVEAL_ORDERS = ['ones-first', 'hundreds-first'] as const;
+export type DigitRevealOrder = (typeof DIGIT_REVEAL_ORDERS)[number];
+
+export type LotterySettings = {
+  prizes: PrizeName[];
+  digitRevealOrder: DigitRevealOrder;
+  theme: AppTheme;
+};
 
 export type PrizeName = string;
 export type LotteryResults = Record<PrizeName, number[]>;
@@ -19,6 +30,18 @@ type CryptoLike = Pick<Crypto, 'getRandomValues'>;
 
 export function createDefaultPrizes(): PrizeName[] {
   return [...DEFAULT_PRIZE_NAMES];
+}
+
+export function createDefaultSettings(): LotterySettings {
+  return {
+    prizes: createDefaultPrizes(),
+    digitRevealOrder: 'ones-first',
+    theme: DEFAULT_APP_THEME
+  };
+}
+
+export function getDigitRevealSequence(order: DigitRevealOrder): readonly [number, number, number] {
+  return order === 'hundreds-first' ? [2, 1, 0] : [0, 1, 2];
 }
 
 export function normalizePrizeName(name: string): PrizeName {
@@ -55,6 +78,36 @@ export function parseStoredPrizes(raw: string | null): PrizeName[] | null {
   }
 }
 
+export function parseStoredSettings(raw: string | null): LotterySettings | null {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (Array.isArray(parsed)) {
+      const prizes = parseStoredPrizes(raw);
+      if (!prizes) return null;
+      return { prizes, digitRevealOrder: 'ones-first', theme: DEFAULT_APP_THEME };
+    }
+
+    if (typeof parsed !== 'object' || parsed === null) return null;
+
+    const record = parsed as Record<string, unknown>;
+    const prizes = parseStoredPrizes(JSON.stringify(record.prizes));
+    if (!prizes) return null;
+
+    const order = record.digitRevealOrder;
+    const digitRevealOrder: DigitRevealOrder =
+      order === 'hundreds-first' ? 'hundreds-first' : 'ones-first';
+
+    const theme = isAppTheme(record.theme) ? record.theme : DEFAULT_APP_THEME;
+
+    return { prizes, digitRevealOrder, theme };
+  } catch {
+    return null;
+  }
+}
+
 export function isNumberInRange(
   value: number,
   min = LOTTERY_MIN_NUMBER,
@@ -64,11 +117,11 @@ export function isNumberInRange(
 }
 
 export function parseThreeDigitNumber(
-  value: string,
+  value: string | number,
   min = LOTTERY_MIN_NUMBER,
   max = LOTTERY_MAX_NUMBER
 ): number | null {
-  const trimmed = value.trim();
+  const trimmed = String(value).trim();
   if (!/^\d{1,3}$/.test(trimmed)) return null;
   const parsed = Number(trimmed);
   return isNumberInRange(parsed, min, max) ? parsed : null;
@@ -179,17 +232,32 @@ export function reconcileResultsForPrizes(
 ): LotteryResults {
   const reconciled = createEmptyResults(nextPrizes);
   const usedNumbers = new Set<number>();
+  const nextSet = new Set(nextPrizes);
+  const previousSet = new Set(previousPrizes);
 
-  nextPrizes.forEach((nextPrize, index) => {
-    const previousPrize = previousPrizes[index];
-    const source = results[previousPrize] ?? results[nextPrize] ?? [];
-
-    for (const value of source) {
+  const pushUnique = (prize: PrizeName, values: readonly number[]) => {
+    for (const value of values) {
       if (!isNumberInRange(value, LOTTERY_MIN_NUMBER, LOTTERY_MAX_NUMBER)) continue;
       if (usedNumbers.has(value)) continue;
-      reconciled[nextPrize].push(value);
+      reconciled[prize].push(value);
       usedNumbers.add(value);
     }
+  };
+
+  for (const prize of nextPrizes) {
+    if (previousSet.has(prize)) {
+      pushUnique(prize, results[prize] ?? []);
+    }
+  }
+
+  nextPrizes.forEach((nextPrize, index) => {
+    if (reconciled[nextPrize].length > 0) return;
+
+    const previousPrize = previousPrizes[index];
+    if (!previousPrize || previousPrize === nextPrize) return;
+    if (nextSet.has(previousPrize)) return;
+
+    pushUnique(nextPrize, results[previousPrize] ?? []);
   });
 
   return reconciled;
