@@ -25,13 +25,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": ["nsis"],
     "windows": {
       "nsis": {
         "languages": ["Japanese"]
-      },
-      "wix": {
-        "language": "ja-JP"
       }
     },
     "icon": [
